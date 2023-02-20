@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Burger Shop - Your Orders</title>
+</head>
+<body>
+  <h1>Your Orders</h1>
+  {% if orders %}
+    <ul>
+      {% for order in orders %}
+        <li>Order {{ order.order_number }} - {{ order.toppings }} ({{ order.quantity }}) - ${{ order.price }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>You haven't placed any orders yet.</p>
+  {% endif %}
+  <a href="{% url 'order_burgers' %}">Order More Burgers</a><br>
+    <a href="..\">Back</a>
+<p>Numéro de commande : {{ commande.order_number }}</p>
+<p>Statut de la commande : {{ commande.statut }}</p>
+<p>Montant de la commande : {{ commande.montant }}</p>
+</body>
+</html>
