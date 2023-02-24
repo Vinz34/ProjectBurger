@@ -1,0 +1,24 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Burger Shop - Home</title>
+</head>
+<body>
+  <h1>Welcome to the Burger Shop!</h1>
+  {% if user.is_authenticated %}
+    {{ user.username }}!
+      <p>Click the button below to order your burgers.</p>
+      <a href="{% url 'order_burgers' %}"><button>Order Burgers</button></a>
+    </body>
+
+
+  <p><a href="{% url 'logout' %}">Log Out</a></p>
+  <p><a href="{% url 'password_reset' %}">Reset Password</a></p>
+{% else %}
+  <p>You are not logged in</p>
+  <a href="{% url 'login' %}">Log In</a>
+{% endif %}
+

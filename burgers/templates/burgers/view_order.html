@@ -1,0 +1,14 @@
+{% block content %}
+  <h1>Order number: {{ burger_order.order_number }}</h1>
+  <p>Customer Name: {{ burger_order.customer_name }}</p>
+  <p>Burgers:</p>
+  <ul>
+    {% for burger in burgers_order.burgers.all%}
+      <li>{{ burger.name }}</li>
+    {% empty %}
+      <li>No burgers added</li>
+    {% endfor %}
+  </ul>
+  <p>Total Price: {{ burger_order.price }}</p>
+    <a href="..\..\..\..\..\">Back</a>
+{% endblock %}

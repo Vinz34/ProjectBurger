@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Burgers</h1>
+  <form method="POST" action="{% url 'order_burgers' %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="burger-select">Choose a burger:</label>
+      <select class="form-control" id="burger-select" name="burger">
+        {% for burger in burgers %}
+          <option value="{{ burger.id }}">{{ burger.name }} (${{ burger.price }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="quantity-input">Quantity:</label>
+      <input class="form-control" id="quantity-input" type="number" name="quantity" min="1" value="1">
+    </div>
+    <button type="submit" class="btn btn-primary">Add to cart</button>
+  </form>
+{% endblock %}

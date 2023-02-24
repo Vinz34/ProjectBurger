@@ -1,19 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class BurgerOrder(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    toppings = models.CharField(max_length=100)
-    quantity = models.IntegerField(default=1)
-    price = models.DecimalField(max_digits=6, decimal_places=2)
-    order_number = models.IntegerField()
-
-
-class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    burgers = models.CharField(max_length=200, default='')
-    date_ordered = models.DateTimeField(auto_now_add=True)
-
 
 class Burger(models.Model):
     name = models.CharField(max_length=100, default='', unique=True)
@@ -22,6 +9,26 @@ class Burger(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class BurgerOrder(models.Model):
+    customer_name = models.CharField(max_length=100)
+    order_number = models.IntegerField(default=0)
+    burgers = models.ManyToManyField(Burger)
+    date_created = models.DateTimeField(auto_now_add=True)
+    is_completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Order #{self.order_number} ({self.customer_name})"
+
+
+class BurgerOrderBurger(models.Model):
+    burger = models.ForeignKey(Burger, on_delete=models.CASCADE)
+    burger_order = models.ForeignKey(BurgerOrder, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+
+
 
 
 '''burger1 = Burger(name="Classic Cheeseburger", description="A classic cheeseburger with lettuce, tomato, pickles, and onions.", price=5.99)

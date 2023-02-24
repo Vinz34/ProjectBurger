@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Burger Shop - Delete Order {{ order.order_number }}</title>
+</head>
+<body>
+  <h1>Delete Order {{ order.order_number }}</h1>
+  <p>Are you sure you want to delete this order?</p>
+  <p><strong>Customer Name:</strong> {{ order.customer_name }}</p>
+  <p><strong>Burgers:</strong></p>
+  <ul>
+    {% for burger in order.burgers.all %}
+      <li>{{ burger.name }}</li>
+    {% endfor %}
+  </ul>
+  <p><strong>Price:</strong> ${{ order.price }}</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Delete</button>
+  </form>
+  <br>
+  <a href="{% url 'view_order' order.order_number %}">Back to Order Details</a><br>
+  <a href="{% url 'view_orders' %}">Back to Your Orders</a><br>
+  <a href="..\..\">Back to Home</a>
+</body>
+</html>

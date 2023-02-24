@@ -1,17 +1,17 @@
-from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
+from django.core.checks import messages
 from django.shortcuts import render, redirect
+from django.http import Http404, HttpResponse
+from .models import Burger, BurgerOrder, BurgerOrderBurger
 from .forms import BurgerOrderForm
-from .models import BurgerOrder
 import random
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Order
-
-
+from django.shortcuts import get_object_or_404, render, redirect
 
 
 
 def home(request):
-    return render(request, 'burgers/home.html')
+    return render(request, 'burgers/templates/home.html')
+
 
 # Function to calculate the price of a burger order
 def calculate_price(toppings, quantity):
@@ -35,99 +35,95 @@ def generate_order_number():
         order_number = random.randint(0, 100)
     return order_number
 
+
+@login_required
 def order_burgers(request):
-    # Check if the request is a POST request
     if request.method == 'POST':
-        # Create a form instance with the POST data
         form = BurgerOrderForm(request.POST)
-        # Check if the form is valid
         if form.is_valid():
-            # Get the toppings and quantity from the form data
-            toppings = form.cleaned_data['toppings']
-            quantity = form.cleaned_data['quantity']
-            # Calculate the price of the order based on the toppings and quantity
-            price = calculate_price(toppings, quantity)
-            # Generate a unique order number
-            order_number = generate_order_number()
-            # Create a new BurgerOrder object with the current user, toppings, quantity, price, and order_number
-            order = BurgerOrder(user=request.user, toppings=toppings, quantity=quantity, price=price, order_number=order_number)
-            order.save()
-            # Redirect the user to a page to view their orders
-            return redirect('view_orders', order_number=order_number)
+            burger_order = form.save(commit=False)
+            burger_order.order_number = generate_order_number()
+            burger_order.save()
+            for burger in form.cleaned_data['burger']:
+                BurgerOrderBurger.objects.create(
+                    burger=burger,
+                    burger_order=burger_order
+                )
+            return redirect('view_order', order_number=burger_order.order_number)
     else:
-        # If the request is not a POST request, create a new form instance
         form = BurgerOrderForm()
-    # Render the order_burgers.html template with the form
-    return render(request, 'burgers/order_burgers.html', {'form': form})
+
+    context = {
+        'form': form,
+        'burgers': Burger.objects.all(),
+    }
+
+    return render(request, 'burgers/order_burgers.html', context)
 
 
-# View for viewing orders
-def view_orders(request, order_number):
-    """
-        Display the details of a specific order and allow the user to edit or delete it.
-        """
-    # Get the order with the specified order_number
-    order = get_object_or_404(BurgerOrder, order_number=order_number)
-    # Check if the user is authorized to view this order
-    if request.user != order.user:
-        return HttpResponseForbidden()
+@login_required
+def view_order(request, order_number):
+    try:
+        burger_order = BurgerOrder.objects.prefetch_related('burgerorderburger_set__burger').get(order_number=order_number)
+    except BurgerOrder.DoesNotExist:
+        raise Http404("Order does not exist")
 
-    # Check if the form has been submitted
-    if request.method == 'POST':
-        # Check if the user clicked the delete button
-        if 'delete' in request.POST:
-            # Delete the order and redirect to the view orders page
-            order.delete()
-            return redirect('view_orders')
-        else:
-            # Get the form data and update the order
-            form = BurgerOrderForm(request.POST, instance=order)
-            if form.is_valid():
-                toppings = form.cleaned_data['toppings']
-                quantity = form.cleaned_data['quantity']
-                price = calculate_price(order.burger.price, toppings, quantity)
+    context = {
+        'burger_order': burger_order,
+    }
 
-                # Update the order
-                order.toppings = toppings
-                order.quantity = quantity
-                order.price = price
-                order.save()
+    return render(request, 'burgers/view_order.html', context)
 
-                return redirect('view_orders', order_number=order_number)
-    else:
-        # Create the form and pass in the current order instance
-        form = BurgerOrderForm(instance=order)
-        
 
-    '''context = {'form': form, 'order': order}
-    return render(request, 'burgers/view_orders.html', context)'''
-    command = BurgerOrder.objects.get(order_number = order_number)
-
-    context = {'command': command}
+def view_orders(request):
+    orders = BurgerOrder.objects.all()
+    context = {
+        'orders': orders,
+    }
     return render(request, 'burgers/view_orders.html', context)
 
-def edit_order(request, pk):
-    # Retrieve the BurgerOrder object with the given primary key
-    order = get_object_or_404(BurgerOrder, pk=pk)
+@login_required
+def create_burger(request):
     if request.method == 'POST':
-        # If the form has been submitted, process the form data
+        form = BurgerOrderForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('list_burgers')
+    else:
+        form = BurgerOrderForm()
+    return render(request, 'burgers/create_burger.html', {'form': form})
+
+
+@login_required
+def edit_order(request, order_number):
+    try:
+        order = BurgerOrder.objects.get(order_number=order_number, customer_name=request.user)
+    except BurgerOrder.DoesNotExist:
+        return HttpResponse("This order does not exist.")
+
+    burgers = order.burger_set.all()
+    form = BurgerOrderForm(instance=order)
+    if request.method == 'POST':
         form = BurgerOrderForm(request.POST, instance=order)
         if form.is_valid():
-            # Update the BurgerOrder object with the form data and save it
-            order = form.save(commit=False)
-            order.price = order.calculate_price()
-            order.save()
-            return redirect('view_orders')
-    else:
-        # If the form has not been submitted, create a new form with the current BurgerOrder object as the initial data
-        form = BurgerOrderForm(instance=order)
-    return render(request, 'edit_order.html', {'form': form, 'order': order})
+            form.save()
+            return redirect('view_order', order_number=order_number)
+    context = {
+        'form': form,
+        'order': order,
+        'burgers': burgers,
+    }
+    return render(request, 'edit_order.html', context)
 
-def delete_order(request, pk):
-    # Retrieve the BurgerOrder object with the given primary key
-    order = get_object_or_404(BurgerOrder, pk=pk)
-    # Delete the BurgerOrder object from the database
-    order.delete()
-    return redirect('view_orders')
+
+@login_required
+def delete_order(request, order_number):
+    try:
+        order = BurgerOrder.objects.get(order_number=order_number, customer_name=request.user)
+        order.delete()
+        return redirect('view_orders')
+    except BurgerOrder.DoesNotExist:
+        # gérer le cas où l'objet n'existe pas
+        return HttpResponse("Order does not exist.")
 
 

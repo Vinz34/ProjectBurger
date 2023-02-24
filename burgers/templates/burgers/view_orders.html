@@ -9,16 +9,19 @@
   {% if orders %}
     <ul>
       {% for order in orders %}
-        <li>Order {{ order.order_number }} - {{ order.toppings }} ({{ order.quantity }}) - ${{ order.price }}</li>
+        <li>Order {{ order.order_number }} - ${{ order.price }}
+            <form method="POST" action="{% url 'delete_order' order.order_number %}">
+                {% csrf_token %}
+                <button type="submit">Delete</button>
+            </form>
+            <a href="{% url 'edit_order' order.order_number %}">Edit</a>
+        </li>
       {% endfor %}
     </ul>
   {% else %}
     <p>You haven't placed any orders yet.</p>
   {% endif %}
   <a href="{% url 'order_burgers' %}">Order More Burgers</a><br>
-    <a href="..\">Back</a>
-<p>Numéro de commande : {{ commande.order_number }}</p>
-<p>Statut de la commande : {{ commande.statut }}</p>
-<p>Montant de la commande : {{ commande.montant }}</p>
+  <a href="..\..\">Back</a>
 </body>
 </html>
